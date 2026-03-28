@@ -2,17 +2,17 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
+import json
 
 
 # ─── Model ─────────────────────────────────────────────
 
 class HousingModel(nn.Module):
-    def __init__(self):
+    def __init__(self, hidden_size=32):
         super().__init__()
-        self.layer1 = nn.Linear(5, 64)
+        self.layer1 = nn.Linear(5, hidden_size)
         self.relu = nn.ReLU()
-        self.layer2 = nn.Linear(64, 1)
+        self.layer2 = nn.Linear(hidden_size, 1)
 
     def forward(self, x):
         x = self.layer1(x)
@@ -40,86 +40,83 @@ def compute_metrics(y_true, y_pred):
 # ─── Main ──────────────────────────────────────────────
 
 def main():
-    # 1. Load Data
     df = pd.read_csv("data/housing.csv")
-    print("Data shape:", df.shape)
 
-    # 2. Features & Target
     feature_cols = ['area_sqm', 'bedrooms', 'floor', 'age_years', 'distance_to_center_km']
+
     X = df[feature_cols]
     y = df[['price_jod']]
 
-    # 3. Scaling
+    # 🔥 Feature scaling
     X_scaled = (X - X.mean()) / X.std()
 
+    # 🔥 Target scaling
     y_mean = y.mean()
     y_std = y.std()
     y_scaled = (y - y_mean) / y_std
 
-    # 4. Split
+    # Split
     split = int(0.8 * len(df))
     X_train = X_scaled[:split]
     X_test = X_scaled[split:]
     y_train = y_scaled[:split]
     y_test = y_scaled[split:]
 
-    # 5. To Tensor
+    # To tensor
     X_train = torch.tensor(X_train.values, dtype=torch.float32)
     X_test = torch.tensor(X_test.values, dtype=torch.float32)
     y_train = torch.tensor(y_train.values, dtype=torch.float32)
     y_test = torch.tensor(y_test.values, dtype=torch.float32)
 
-    # 6. Model
-    model = HousingModel()
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    # 🔥 Experiments
+    learning_rates = [0.0005, 0.001, 0.005]
+    hidden_sizes = [16, 32, 64]
+    epochs_list = [100, 200]
 
-    # 7. Training
-    epochs = 200
-    for epoch in range(epochs):
-        preds = model(X_train)
-        loss = criterion(preds, y_train)
+    results = []
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    for lr in learning_rates:
+        for hidden in hidden_sizes:
+            for epochs in epochs_list:
 
-        if epoch % 50 == 0:
-            print(f"Epoch {epoch}: Loss = {loss.item():.4f}")
+                model = HousingModel(hidden_size=hidden)
+                criterion = nn.MSELoss()
+                optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    # 8. Predict
-    with torch.no_grad():
-        preds = model(X_test)
+                # Train
+                for epoch in range(epochs):
+                    preds = model(X_train)
+                    loss = criterion(preds, y_train)
 
-    # رجّع القيم الأصلية
-    preds = preds.numpy() * y_std.values + y_mean.values
-    y_true = y_test.numpy() * y_std.values + y_mean.values
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
 
-    # 9. Metrics
-    mae, r2 = compute_metrics(y_true, preds)
-    print(f"\n🔥 MAE={mae:.2f}, R2={r2:.2f}")
+                # Predict
+                with torch.no_grad():
+                    preds = model(X_test)
 
-    # ─── 10. GRAPH ─────────────────────────────
+                # 🔥 رجّع القيم الأصلية
+                preds = preds.numpy() * y_std.values + y_mean.values
+                y_true = y_test.numpy() * y_std.values + y_mean.values
 
-    plt.figure(figsize=(8,6))
+                mae, r2 = compute_metrics(y_true, preds)
 
-    plt.scatter(y_true, preds, alpha=0.6)
+                print(f"MAE={mae:.2f}, R2={r2:.2f}, lr={lr}, hidden={hidden}, epochs={epochs}")
 
-    min_val = min(y_true.min(), preds.min())
-    max_val = max(y_true.max(), preds.max())
+                results.append({
+                    "lr": lr,
+                    "hidden": hidden,
+                    "epochs": epochs,
+                    "mae": float(mae),
+                    "r2": float(r2)
+                })
 
-    plt.plot([min_val, max_val], [min_val, max_val], color='red')
+    # 🔥 Save results
+    with open("experiments.json", "w") as f:
+        json.dump(results, f, indent=4)
 
-    plt.xlabel("Actual Prices")
-    plt.ylabel("Predicted Prices")
-    plt.title("Actual vs Predicted Prices")
-
-    plt.grid(True)
-
-    plt.savefig("prediction_plot.png")
-    print("📊 Saved prediction_plot.png")
-
-    plt.close()
+    print("\n📁 Saved experiments.json")
 
 
 # ─── Run ───────────────────────────────────────────────

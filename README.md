@@ -1,21 +1,67 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/YUvA8hIt)
-# Integration 2 — PyTorch: Housing Price Prediction
+# 🏠 Housing Price Prediction with PyTorch
 
-**Module 2 — Programming for AI & Data Science**
+## 📌 Project Overview
 
-See the [Module 2 Integration Task Guide](https://levelup-applied-ai.github.io/aispire-14005-pages/modules/module-2/learner/integration-guide) for full instructions.
+This project builds a neural network using PyTorch to predict housing prices based on property features.
+
+The model is trained on a dataset containing real estate attributes such as area, number of bedrooms, floor level, and distance to the city center.
 
 ---
 
-## Quick Reference
+## 🧠 Model Architecture
 
-**File to complete:** `train.py`
+The neural network consists of:
 
-**Install PyTorch before running:**
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-```
+- Input Layer: 5 features
+- Hidden Layer: 64 neurons with ReLU activation
+- Output Layer: 1 neuron (price prediction)
 
-**Branch:** `integration-2/pytorch`
+---
 
-**Submit:** PR URL → TalentLMS Unit 8 text field
+## ⚙️ Features Used
+
+- `area_sqm`
+- `bedrooms`
+- `floor`
+- `age_years`
+- `distance_to_center_km`
+
+---
+
+## 🔄 Data Processing
+
+- Feature scaling (standardization)
+- Target scaling (important for stable training)
+- Train/Test split (80/20)
+
+---
+
+## 📊 Model Performance
+
+| Metric | Value |
+|------|------|
+| MAE  | ~6500 |
+| R²   | ~0.73 |
+
+---
+
+## 📈 Visualization
+
+The model predictions are compared against actual prices:
+
+![Prediction Plot](prediction_plot.png)
+
+- Points close to the red line indicate accurate predictions.
+- The diagonal line represents perfect predictions.
+
+---
+
+## 🧪 Experiment Tracking
+
+Multiple experiments were conducted with different:
+
+- Learning rates
+- Hidden layer sizes
+- Number of epochs
+
+All results are stored in:
